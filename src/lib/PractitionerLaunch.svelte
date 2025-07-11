@@ -24,6 +24,8 @@
         const issParam = launchUrl.searchParams.get("iss")
         const launchParam = launchUrl.searchParams.get("launch")
 
+        const code = launchUrl.searchParams.get("code")
+
         if(!issParam || !launchParam){
             throw new Error("iss or launch parameters not found")
         }
