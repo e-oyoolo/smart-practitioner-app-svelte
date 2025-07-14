@@ -4,10 +4,13 @@
 
     let iss: string
     let launch: string
-    let authorizationEndpoint: string
+    // let authorizationEndpoint: string
+    // let tokenEndpoint: string
     let redirectUrl: string
 
-    const constructAuthUrl = (launch: string) => {
+    const LOCAL_STORAGE_TOKEN_ENDPOINT = 'tokenEndpoint'
+
+    const constructAuthUrl = (authorizationEndpoint:string, launch: string) => {
         const url = new URL(authorizationEndpoint)
         url.searchParams.set('client_id','5d21112e-1d1d-4ceb-9018-6741ebcddc80')
         url.searchParams.set('redirect_uri','http://localhost:5173/')
@@ -19,12 +22,33 @@
 
         return url.href
     }
+
+    const makeTokenRequest = (code: string)=>{
+        const tokenEndpoint = localStorage.getItem(LOCAL_STORAGE_TOKEN_ENDPOINT)
+
+        if(!tokenEndpoint){
+            throw new Error('Token endpoint could not be found in local storage')
+        }
+
+        const form = new FormData()
+
+        
+        axios.post(tokenEndpoint, {})
+
+        localStorage.removeItem(LOCAL_STORAGE_TOKEN_ENDPOINT)
+    }
+
     onMount(async()=>{
         const launchUrl = new URL(window.location.href)
         const issParam = launchUrl.searchParams.get("iss")
         const launchParam = launchUrl.searchParams.get("launch")
 
         const code = launchUrl.searchParams.get("code")
+
+        if (code){
+
+            return 
+        }
 
         if(!issParam || !launchParam){
             throw new Error("iss or launch parameters not found")
@@ -35,10 +59,12 @@
 
         const smartConfigurationResponse = await axios.get(`${iss}/.well-known/smart-configuration`)
         const smartConfiguration = smartConfigurationResponse.data
-        authorizationEndpoint = smartConfiguration.authorization_endpoint as string
+        const authorizationEndpoint = smartConfiguration.authorization_endpoint as string
+        const tokenEndpoint = smartConfiguration.token_endpoint as string
 
-        redirectUrl = constructAuthUrl(launch)
-        console.log(redirectUrl)
+        localStorage.setItem(LOCAL_STORAGE_TOKEN_ENDPOINT, tokenEndpoint)
+
+        redirectUrl = constructAuthUrl(authorizationEndpoint, launch)
 
         window.location.href = redirectUrl
     })
@@ -46,6 +72,6 @@
 
 <div>
     <pre>
-        { JSON.stringify({iss, launch, authorizationEndpoint, redirectUrl}, null, 2)}
+        Loading...
     </pre>
 </div>
