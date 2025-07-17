@@ -43,11 +43,18 @@
       <p class="font-medium">
         {i + 1}.{medication.resource?.medicationReference?.display}
       </p>
-      {#if medication?.resource?.reasonCode?.[0]?.text}
-        For {medication?.resource?.reasonCode?.[0]?.text}
-      {/if}
+      <div class="ml-4">
+        {#if medication?.resource?.reasonCode?.[0]?.text}
+          <p>
+            Medication for {medication?.resource?.reasonCode?.[0]?.text}
+          </p>
+        {/if}
+        {#if medication?.resource?.dosageInstruction?.[0]?.patientInstruction} 
+          <p>
+            Dosage: {medication?.resource?.dosageInstruction?.[0]?.patientInstruction}
+          </p>
+        {/if}
+      </div>
     {/each}
-    <p>Welcome to your patient record!</p>
-    <p>{JSON.stringify(medicationList, null, 2)}</p>
   {/await}
 </div>
