@@ -1,77 +1,144 @@
 <script lang="ts">
-    import axios from "axios";
-    import { onMount } from "svelte";
+  import axios from "axios";
+  import { stringify } from "postcss";
+  import { onMount } from "svelte";
+  import PatientBanner from "./PatientBanner.svelte";
+  import ObservationViewer from "./ObservationViewer.svelte";
 
-    let iss: string
-    let launch: string
-    // let authorizationEndpoint: string
-    // let tokenEndpoint: string
-    let redirectUrl: string
+  let clientId = "5d21112e-1d1d-4ceb-9018-6741ebcddc80";
+  let redirectUri = "http://localhost:5173/";
+  let baseUrl: string;
 
-    const LOCAL_STORAGE_TOKEN_ENDPOINT = 'tokenEndpoint'
+  interface TokenResponse {
+    access_token: string;
+    patient: string;
+    scope: string;
+    need_patient_banner: boolean;
+    id_token: string;
+    smart_style_url: string;
+    // encounter: "97953492",
+    // token_type: "Bearer",
+    expires_in: number;
+    // user: "12742069";
+    // tenant: "ec2458f2-1e24-41c8-b71b-0e701af7583d";
+    // username: "portal";
+  }
 
-    const constructAuthUrl = (authorizationEndpoint:string, launch: string) => {
-        const url = new URL(authorizationEndpoint)
-        url.searchParams.set('client_id','5d21112e-1d1d-4ceb-9018-6741ebcddc80')
-        url.searchParams.set('redirect_uri','http://localhost:5173/')
-        url.searchParams.set('scope','openid fhirUser launch user/Observation.read user/Observation.write user/Patient.read')
-        url.searchParams.set('response_type','code')
-        url.searchParams.set('aud',iss)
+  let token: TokenResponse | undefined = undefined;
 
-        url.searchParams.set('launch', launch)
+  const LOCAL_STORAGE_TOKEN_ENDPOINT = "tokenEndpoint";
+  const LOCAL_STORAGE_TOKEN_JSON = "token";
+  const LOCAL_STORAGE_ISS = "iss";
 
-        return url.href
+  const constructAuthUrl = (
+    authorizationEndpoint: string,
+    launch: string,
+    iss: string
+  ) => {
+    const url = new URL(authorizationEndpoint);
+    url.searchParams.set("client_id", clientId);
+    url.searchParams.set("redirect_uri", redirectUri);
+    url.searchParams.set(
+      "scope",
+      "openid fhirUser launch user/Observation.read user/Observation.write user/Patient.read"
+    );
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("aud", iss);
+
+    url.searchParams.set("launch", launch);
+
+    return url.href;
+  };
+
+  const makeTokenRequest = async (code: string) => {
+    const tokenEndpoint = localStorage.getItem(LOCAL_STORAGE_TOKEN_ENDPOINT);
+
+    if (!tokenEndpoint) {
+      throw new Error("Token endpoint could not be found in local storage");
     }
 
-    const makeTokenRequest = (code: string)=>{
-        const tokenEndpoint = localStorage.getItem(LOCAL_STORAGE_TOKEN_ENDPOINT)
+    const form = new URLSearchParams();
+    form.set("grant_type", "authorization_code");
+    // form.set('grant_type', 'authorization_code')
+    form.set("code", code);
+    form.set("redirect_uri", redirectUri);
+    form.set("client_id", clientId);
 
-        if(!tokenEndpoint){
-            throw new Error('Token endpoint could not be found in local storage')
-        }
+    const tokenResponse = await axios.post(tokenEndpoint, form, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
 
-        const form = new FormData()
+    localStorage.removeItem(LOCAL_STORAGE_TOKEN_ENDPOINT);
 
-        
-        axios.post(tokenEndpoint, {})
+    return tokenResponse.data;
+  };
 
-        localStorage.removeItem(LOCAL_STORAGE_TOKEN_ENDPOINT)
+  onMount(async () => {
+    const launchUrl = new URL(window.location.href);
+    const issParam = launchUrl.searchParams.get("iss");
+    const launchParam = launchUrl.searchParams.get("launch");
+
+    const code = launchUrl.searchParams.get("code");
+
+    const tokenJSON = localStorage.getItem(LOCAL_STORAGE_TOKEN_JSON);
+    const issLocalStorage = localStorage.getItem(LOCAL_STORAGE_ISS);
+
+    if (issLocalStorage) {
+      baseUrl = issLocalStorage;
     }
 
-    onMount(async()=>{
-        const launchUrl = new URL(window.location.href)
-        const issParam = launchUrl.searchParams.get("iss")
-        const launchParam = launchUrl.searchParams.get("launch")
+    // if (tokenJSON) {
+    //   token = JSON.parse(tokenJSON);
+    //   return;
+    // }
 
-        const code = launchUrl.searchParams.get("code")
+    if (token) {
+      //validate token expiry
+      return;
+    }
 
-        if (code){
+    if (code) {
+      const tokenFromCerner = await makeTokenRequest(code);
+      console.log({ tokenFromCerner });
+      token = tokenFromCerner;
 
-            return 
-        }
+      localStorage.setItem(LOCAL_STORAGE_TOKEN_JSON, JSON.stringify(token));
+      return;
+    }
 
-        if(!issParam || !launchParam){
-            throw new Error("iss or launch parameters not found")
-        }
+    if (!issParam || !launchParam) {
+      throw new Error("iss or launch parameters not found");
+    }
 
-        iss = issParam
-        launch = launchParam
+    const iss = issParam;
+    localStorage.setItem(LOCAL_STORAGE_ISS, issParam);
+    const launch = launchParam;
 
-        const smartConfigurationResponse = await axios.get(`${iss}/.well-known/smart-configuration`)
-        const smartConfiguration = smartConfigurationResponse.data
-        const authorizationEndpoint = smartConfiguration.authorization_endpoint as string
-        const tokenEndpoint = smartConfiguration.token_endpoint as string
+    const smartConfigurationResponse = await axios.get(
+      `${iss}/.well-known/smart-configuration`
+    );
+    const smartConfiguration = smartConfigurationResponse.data;
+    const authorizationEndpoint =
+      smartConfiguration.authorization_endpoint as string;
+    const tokenEndpoint = smartConfiguration.token_endpoint as string;
 
-        localStorage.setItem(LOCAL_STORAGE_TOKEN_ENDPOINT, tokenEndpoint)
+    localStorage.setItem(LOCAL_STORAGE_TOKEN_ENDPOINT, tokenEndpoint);
 
-        redirectUrl = constructAuthUrl(authorizationEndpoint, launch)
+    const redirectUrl = constructAuthUrl(authorizationEndpoint, launch, iss);
 
-        window.location.href = redirectUrl
-    })
+    window.location.href = redirectUrl;
+  });
 </script>
 
-<div>
-    <pre>
-        Loading...
-    </pre>
-</div>
+{#if !token}
+  Loading...
+{:else if token?.need_patient_banner}
+  <PatientBanner
+    {baseUrl}
+    accessToken={token.access_token}
+    patientId={token.patient}
+  ></PatientBanner>
+  <ObservationViewer { baseUrl } accessToken={token.access_token} patientId={token.patient}></ObservationViewer>
+{/if}
