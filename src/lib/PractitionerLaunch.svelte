@@ -3,7 +3,7 @@
   import { stringify } from "postcss";
   import { onMount } from "svelte";
   import PatientBanner from "./PatientBanner.svelte";
-  import ObservationViewer from "./ObservationViewer.svelte";
+  import ObservationViewer from "./ObservationViewer_old.svelte";
 
   let clientId = "5d21112e-1d1d-4ceb-9018-6741ebcddc80";
   let redirectUri = "http://localhost:5173/";
