@@ -60,14 +60,17 @@
     }
 
     const results = bundle.entry?.filter(entry=>entry.resource?.resourceType === 'Observation') as BundleEntry<Observation>[]
-    // results.sort((entry1,entry2)=>(entry1.resource?.effectiveDateTime < entry2.resource?.effectiveDateTime) ? -1:((entry1.resource?.effectiveDateTime > entry2.resource?.effectiveDateTime) ? 1:0))
-    return results.sort((entry1, entry2)=>{
-      if(entry1?.resource?.effectiveDateTime && entry2?.resource?.effectiveDateTime){
-        return new Date(entry2?.resource?.effectiveDateTime).getTime() - new Date(entry1?.resource?.effectiveDateTime).getTime() 
-      }
+      const nonPanelResults = results.filter(entry=>!entry.resource?.hasMember)
 
-      return 0
-    })
+    // results.sort((entry1,entry2)=>(entry1.resource?.effectiveDateTime < entry2.resource?.effectiveDateTime) ? -1:((entry1.resource?.effectiveDateTime > entry2.resource?.effectiveDateTime) ? 1:0))
+    return nonPanelResults
+    // .sort((entry1, entry2)=>{
+    //   if(entry1?.resource?.effectiveDateTime && entry2?.resource?.effectiveDateTime){
+    //     return new Date(entry2?.resource?.effectiveDateTime).getTime() - new Date(entry1?.resource?.effectiveDateTime).getTime() 
+    //   }
+
+    //   return 0
+    // })
   }
 
 </script>
