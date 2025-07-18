@@ -1,31 +1,33 @@
 <script lang="ts">
   import axios from "axios";
   import { onMount } from "svelte";
-  import { FHIR_BASE_URL } from '../config'
   import type { Bundle, OperationOutcome, BundleEntry, Observation } from "fhir/r4";
-  import { stringify } from "postcss";
-  import { formatRelative, subDays } from "date-fns";
+  import { formatRelative } from "date-fns";
 
   export let accessToken: string
   export let patientId: string
-  export let category: string = 'laboratory'
-  export let title: string = 'Lab Results'
+  export let baseUrl: string
+  export let title: string = 'Observations'
 
   onMount(async ()=>{
 
   })
 
   const getLabResults = async () =>{
-    const labObservationResponse = await axios.get<Bundle<Observation | OperationOutcome>>(`${FHIR_BASE_URL}/Observation`, {
+    const labObservationResponse = await axios.get<Bundle<Observation | OperationOutcome>>(`${baseUrl}/Observation`, {
       params:{
-        subject: patientId,
-        category,
-        sort:'date'
+        patient: patientId,
+        sort:'-date'
       },
       headers:{
         'Authorization': `Bearer ${ accessToken }`
       }
     })
+
+    console.log('labObservationResponse.data')
+    console.log(labObservationResponse.data)
+    console.log('labObservationResponse.request')
+    console.log(labObservationResponse.request)
     return labObservationResponse.data
   }
 

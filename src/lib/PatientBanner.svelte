@@ -21,7 +21,7 @@
   });
 </script>
 
-<div class="p-3 flex gap-5 bg-slate-500 text-white">
+<div class="p-3 flex gap-5 bg-slate-800 text-white">
   {#if patientResource}
     <p>
       Name: {patientResource?.name?.[0]?.text}

@@ -3,7 +3,7 @@
   import { stringify } from "postcss";
   import { onMount } from "svelte";
   import PatientBanner from "./PatientBanner.svelte";
-  import ObservationViewer from "./ObservationViewer_old.svelte";
+  import ObservationViewer from "./ObservationViewer.svelte";
 
   let clientId = "5d21112e-1d1d-4ceb-9018-6741ebcddc80";
   let redirectUri = "http://localhost:5173/";
@@ -96,7 +96,7 @@
 
     if (code) {
       const tokenFromCerner = await makeTokenRequest(code);
-      console.log({ tokenFromCerner });
+      // console.log({ tokenFromCerner });
       token = tokenFromCerner;
 
       localStorage.setItem(LOCAL_STORAGE_TOKEN_JSON, JSON.stringify(token));
@@ -130,10 +130,6 @@
 {#if !token}
   Loading...
 {:else if token?.need_patient_banner}
-  <PatientBanner
-    {baseUrl}
-    accessToken={token.access_token}
-    patientId={token.patient}
-  ></PatientBanner>
+  <PatientBanner {baseUrl} accessToken={token.access_token} patientId={token.patient}></PatientBanner>
   <ObservationViewer { baseUrl } accessToken={token.access_token} patientId={token.patient}></ObservationViewer>
 {/if}
