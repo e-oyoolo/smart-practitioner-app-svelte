@@ -16,12 +16,7 @@
     need_patient_banner: boolean;
     id_token: string;
     smart_style_url: string;
-    // encounter: "97953492",
-    // token_type: "Bearer",
     expires_in: number;
-    // user: "12742069";
-    // tenant: "ec2458f2-1e24-41c8-b71b-0e701af7583d";
-    // username: "portal";
   }
 
   let token: TokenResponse | undefined = undefined;

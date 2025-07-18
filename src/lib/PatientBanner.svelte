@@ -1,4 +1,4 @@
-<script lang="ts">
+  <script lang="ts">
   import axios from "axios";
   import type { Patient } from "fhir/r4";
   import { onMount } from "svelte";
@@ -21,16 +21,14 @@
   });
 </script>
 
-<!-- <pre>
-    {JSON.stringify(patientResource)}
-</pre> -->
-
-{#if patientResource}
-  <div class="p-3 flex gap-5 bg-slate-500 text-white">
+<div class="p-3 flex gap-5 bg-slate-500 text-white">
+  {#if patientResource}
     <p>
       Name: {patientResource?.name?.[0]?.text}
     </p>
     <p>DOB: {patientResource?.birthDate}</p>
     <p>Gender: {patientResource?.gender}</p>
-  </div>
-{:else}{/if}
+  {:else}
+    Loading Patient...
+  {/if}
+</div>
