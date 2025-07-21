@@ -1,4 +1,4 @@
-  <script lang="ts">
+<script lang="ts">
   import axios from "axios";
   import type { Patient } from "fhir/r4";
   import { onMount } from "svelte";

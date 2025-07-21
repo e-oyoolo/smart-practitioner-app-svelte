@@ -9,6 +9,9 @@
   export let baseUrl: string
   export let title: string = 'Observations'
 
+  let temperature: number
+  let obervationPosting = false
+
   onMount(async ()=>{
 
   })
@@ -17,19 +20,64 @@
     const labObservationResponse = await axios.get<Bundle<Observation | OperationOutcome>>(`${baseUrl}/Observation`, {
       params:{
         patient: patientId,
-        sort:'-date'
+        sort:'-date',
+        category:'vital-signs'
       },
       headers:{
         'Authorization': `Bearer ${ accessToken }`
       }
     })
-
-    console.log('labObservationResponse.data')
-    console.log(labObservationResponse.data)
-    console.log('labObservationResponse.request')
-    console.log(labObservationResponse.request)
     return labObservationResponse.data
   }
+
+  let observationPromise = getLabResults()
+
+  const postTemperature = async (temperature: number) =>{
+    obervationPosting = true
+    const temperatureResource = {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [{
+                "coding": [{
+                        "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                        "code": "vital-signs",
+                        "display": "Vital Signs"
+                    }
+                ],
+                "text": "Vital Signs"
+            }
+        ],
+        "code": {
+            "coding": [{
+                    "system": "http://loinc.org",
+                    "code": "8331-1"
+                }
+            ],
+            "text": "Temperature Oral"
+        },
+        "subject": {
+            "reference": `Patient/${patientId}`
+        },
+        "effectiveDateTime": new Date().toISOString(),
+        "valueQuantity": {
+            "value": temperature,
+            "unit": "degC",
+            "system": "http://unitsofmeasure.org",
+            "code": "Cel"
+        }
+    }
+
+    console.log(temperatureResource)
+    
+    const temperatureObservationResponse = await axios.post(`${baseUrl}/Observation`, temperatureResource,{
+      headers:{
+        'Authorization': `Bearer ${ accessToken }`
+      }
+    })
+    obervationPosting = false
+    console.log({temperatureObservationResponse})
+    observationPromise = getLabResults()
+  }  
 
   const getObservationDisplay = (observation: Observation | undefined) => {
 
@@ -37,7 +85,13 @@
       return ''
     }
     
-    const isBp = observation.code?.coding?.findIndex(a=>a.code === '55284-4')
+    const codableConcept = observation?.valueCodeableConcept
+
+    if(codableConcept){
+      return observation?.valueCodeableConcept?.text
+    }
+    // const isBp = observation.code?.coding?.findIndex(a=>a.code === '55284-4')
+    const isBp = observation.component != undefined
 
     if(isBp){
       const systolicComponent = observation.component?.find(a=>a.code?.coding?.find(b=>b.code === '8480-6'))
@@ -60,7 +114,7 @@
     }
 
     const results = bundle.entry?.filter(entry=>entry.resource?.resourceType === 'Observation') as BundleEntry<Observation>[]
-      const nonPanelResults = results.filter(entry=>!entry.resource?.hasMember)
+      const nonPanelResults = results.filter(entry=>entry?.resource?.hasMember === undefined)
 
     // results.sort((entry1,entry2)=>(entry1.resource?.effectiveDateTime < entry2.resource?.effectiveDateTime) ? -1:((entry1.resource?.effectiveDateTime > entry2.resource?.effectiveDateTime) ? 1:0))
     return nonPanelResults
@@ -74,14 +128,29 @@
   }
 
 </script>
-<div class="mt-10 max-width-md mx-auto">
-  {#await getLabResults()}
+<div class="mt-10 max-w-xl mx-auto">
+  {#await observationPromise}
     Loading...
-  {:then labResults}
+  {:then observations}
     <h1 class="text-2xl">
       { title }
     </h1>
-    {#each getObservationEntries(labResults) as observation, i}
+    <div class="my-4">
+      <p class="font-semibold text-gray-700">Create new temperature (degree Celsius)</p>
+      <form on:submit|preventDefault={()=>{postTemperature(temperature)}}>
+        <div>
+        <input step="0.1" min=10 max=50 bind:value={temperature} type="number" class="border border-black p-2 w-48"/>
+        {#if obervationPosting}
+          <p class="p-2">
+            creating observation...
+          </p>
+        {:else}
+          <button class="bg-black text-white p-2" type="submit">Submit</button>
+        {/if}
+        </div>
+      </form>
+    </div>
+    {#each getObservationEntries(observations) as observation, i}
       <p class="font-medium">
         <span class="font-medium">
           {observation.resource?.code?.text}

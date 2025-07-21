@@ -25,6 +25,7 @@
   const LOCAL_STORAGE_TOKEN_JSON = "token";
   const LOCAL_STORAGE_ISS = "iss";
 
+
   const constructAuthUrl = (
     authorizationEndpoint: string,
     launch: string,
